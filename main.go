@@ -62,10 +62,6 @@ func update(snake *Snake, s tcell.Screen, style tcell.Style){
     tail := Pos{snake.x, snake.y}
     snake.tail = append(snake.tail, tail)
   }
-  for i, _ := range snake.tail {
-
-    snake.tail[i] = snake.tail[i+1]
-  }
   draw(*snake, s, style)
   s.Sync()
   fmt.Println(snake.tail)
