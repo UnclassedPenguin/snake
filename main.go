@@ -21,11 +21,16 @@ type Snake struct {
   yspeed int
   length int
   tail []Pos
+  body []Pos
   food Pos
+  dir []int
 }
 
 func draw(snake Snake, s tcell.Screen, style tcell.Style) {
   s.SetContent(snake.x, snake.y, snake.char, []rune{}, style)
+  for i, _ := range snake.tail {
+    s.SetContent(snake.tail[i].x, snake.tail[i].y, snake.char, []rune{}, style)
+  }
   s.SetContent(snake.food.x, snake.food.y, '@', []rune{}, style)
 }
 
@@ -54,10 +59,24 @@ func update(snake *Snake, s tcell.Screen, style tcell.Style){
   food := checkFood(*snake)
   if food {
     snake.food = newFood(s, style)
+    tail := Pos{snake.x, snake.y}
+    snake.tail = append(snake.tail, tail)
+  }
+  for i, _ := range snake.tail {
+
+    snake.tail[i] = snake.tail[i+1]
   }
   draw(*snake, s, style)
   s.Sync()
+  fmt.Println(snake.tail)
 }
+
+func gameOver(s tcell.Screen) {
+  s.Fini()
+  fmt.Println("You Lose!")
+  os.Exit(0)
+}
+
 
 func main() {
   s, err := tcell.NewScreen()
@@ -73,8 +92,7 @@ func main() {
 
   s.Clear()
 
-  //style := tcell.StyleDefault.Foreground(tcell.ColorWhite)
-  style := tcell.StyleDefault.Foreground(tcell.ColorBlue)
+  style := tcell.StyleDefault.Foreground(tcell.ColorWhite)
 
   x, y := s.Size()
 
@@ -88,37 +106,57 @@ func main() {
   snake.length = 0
   snake.tail = []Pos{}
   snake.food = newFood(s, style)
+  snake.dir = []int{1, 0}
 
   // Draw snake
-  draw(snake, s, style)
+  //draw(snake, s, style)
 
-  for {
-    switch ev := s.PollEvent().(type) {
-    case *tcell.EventResize:
-      s.Sync()
-    case *tcell.EventKey:
-      switch ev.Key() {
-      case tcell.KeyCtrlC, tcell.KeyEscape:
-        s.Fini()
-        os.Exit(0)
-      case tcell.KeyRune:
-        switch ev.Rune() {
-        case 'J', 'j':
-          snake.y += 1
-          update(&snake, s, style)
-        case 'K', 'k':
-          snake.y -= 1
-          update(&snake, s, style)
-        case 'H', 'h':
-          snake.x -= 1
-          update(&snake, s, style)
-        case 'L', 'l':
-          snake.x += 1
-          update(&snake, s, style)
+  // Handles Keyboard input
+  go func() {
+    for {
+      switch ev := s.PollEvent().(type) {
+      case *tcell.EventResize:
+        s.Sync()
+      case *tcell.EventKey:
+        switch ev.Key() {
+        case tcell.KeyCtrlC, tcell.KeyEscape:
+          s.Fini()
+          os.Exit(0)
+        case tcell.KeyRune:
+          switch ev.Rune() {
+          case 'J', 'j':
+            snake.yspeed = 1
+            snake.xspeed = 0
+            update(&snake, s, style)
+          case 'K', 'k':
+            snake.yspeed = -1
+            snake.xspeed = 0
+            update(&snake, s, style)
+          case 'H', 'h':
+            snake.xspeed = -1
+            snake.yspeed = 0
+            update(&snake, s, style)
+          case 'L', 'l':
+            snake.xspeed = 1
+            snake.yspeed = 0
+            update(&snake, s, style)
+          }
+        default:
+          fmt.Println(ev.Key())
         }
-      default:
-        fmt.Println(ev.Key())
       }
     }
+  }()
+
+  // Main loop
+  for {
+    snake.x += snake.xspeed
+    snake.y += snake.yspeed
+    if snake.x < 0 || snake.x > x || snake.y < 0 || snake.y > y {
+      gameOver(s)
+    }
+    update(&snake, s, style)
+    time.Sleep(time.Millisecond * 200)
   }
+
 }
