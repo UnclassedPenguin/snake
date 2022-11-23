@@ -21,15 +21,14 @@ type Snake struct {
   yspeed int
   length int
   tail []Pos
-  body []Pos
+  history []Pos
   food Pos
-  dir []int
 }
 
 func draw(snake Snake, s tcell.Screen, style tcell.Style) {
   s.SetContent(snake.x, snake.y, snake.char, []rune{}, style)
-  for i, _ := range snake.tail {
-    s.SetContent(snake.tail[i].x, snake.tail[i].y, snake.char, []rune{}, style)
+  for i, _ := range snake.history {
+    s.SetContent(snake.history[i].x, snake.history[i].y, snake.char, []rune{}, style)
   }
   s.SetContent(snake.food.x, snake.food.y, '@', []rune{}, style)
 }
@@ -57,19 +56,30 @@ func checkFood(snake Snake) bool {
 func update(snake *Snake, s tcell.Screen, style tcell.Style){
   s.Clear()
   food := checkFood(*snake)
+  newHistory := Pos{snake.x, snake.y}
+  snake.history = append(snake.history, newHistory)
+  snake.history = snake.history[len(snake.history)-snake.length:len(snake.history)]
+  if len(snake.history) > 0 {
+    snake.tail = snake.history[:len(snake.history)-1]
+  }
+
   if food {
+    snake.length++
     snake.food = newFood(s, style)
-    tail := Pos{snake.x, snake.y}
-    snake.tail = append(snake.tail, tail)
   }
   draw(*snake, s, style)
   s.Sync()
-  fmt.Println(snake.tail)
+  //fmt.Println("X:", snake.x)
+  //fmt.Println("Y:", snake.y)
+  //fmt.Println(snake.history)
+  //fmt.Println("TAIL: ", snake.tail)
+  //fmt.Println(snake.length)
 }
 
-func gameOver(s tcell.Screen) {
+func gameOver(s tcell.Screen, snake Snake) {
   s.Fini()
   fmt.Println("You Lose!")
+  fmt.Printf("Score: %v\n", len(snake.tail))
   os.Exit(0)
 }
 
@@ -99,13 +109,10 @@ func main() {
   snake.y = y/2
   snake.xspeed = 1
   snake.yspeed = 0
-  snake.length = 0
+  snake.length = 1
+  snake.history = []Pos{}
   snake.tail = []Pos{}
   snake.food = newFood(s, style)
-  snake.dir = []int{1, 0}
-
-  // Draw snake
-  //draw(snake, s, style)
 
   // Handles Keyboard input
   go func() {
@@ -118,24 +125,32 @@ func main() {
         case tcell.KeyCtrlC, tcell.KeyEscape:
           s.Fini()
           os.Exit(0)
+        case tcell.KeyUp:
+          snake.yspeed = -1
+          snake.xspeed = 0
+        case tcell.KeyDown:
+          snake.yspeed = 1
+          snake.xspeed = 0
+        case tcell.KeyLeft:
+          snake.xspeed = -1
+          snake.yspeed = 0
+        case tcell.KeyRight:
+          snake.xspeed = 1
+          snake.yspeed = 0
         case tcell.KeyRune:
           switch ev.Rune() {
           case 'J', 'j':
             snake.yspeed = 1
             snake.xspeed = 0
-            update(&snake, s, style)
           case 'K', 'k':
             snake.yspeed = -1
             snake.xspeed = 0
-            update(&snake, s, style)
           case 'H', 'h':
             snake.xspeed = -1
             snake.yspeed = 0
-            update(&snake, s, style)
           case 'L', 'l':
             snake.xspeed = 1
             snake.yspeed = 0
-            update(&snake, s, style)
           }
         default:
           fmt.Println(ev.Key())
@@ -149,8 +164,14 @@ func main() {
     snake.x += snake.xspeed
     snake.y += snake.yspeed
     if snake.x < 0 || snake.x > x || snake.y < 0 || snake.y > y {
-      gameOver(s)
+      gameOver(s, snake)
     }
+    for _, v := range snake.tail {
+      if snake.x == v.x && snake.y == v.y {
+        gameOver(s, snake)
+      }
+    }
+
     update(&snake, s, style)
     time.Sleep(time.Millisecond * 200)
   }
