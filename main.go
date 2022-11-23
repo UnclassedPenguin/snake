@@ -125,11 +125,11 @@ func main() {
         case tcell.KeyCtrlC, tcell.KeyEscape:
           s.Fini()
           os.Exit(0)
-        case tcell.KeyUp:
-          snake.yspeed = -1
-          snake.xspeed = 0
         case tcell.KeyDown:
           snake.yspeed = 1
+          snake.xspeed = 0
+        case tcell.KeyUp:
+          snake.yspeed = -1
           snake.xspeed = 0
         case tcell.KeyLeft:
           snake.xspeed = -1
@@ -171,9 +171,7 @@ func main() {
         gameOver(s, snake)
       }
     }
-
     update(&snake, s, style)
     time.Sleep(time.Millisecond * 200)
   }
-
 }
