@@ -91,6 +91,9 @@ func game(s tcell.Screen, style tcell.Style, snake Snake) {
         switch ev.Key() {
         case tcell.KeyCtrlC, tcell.KeyEscape:
           s.Fini()
+          if snake.length > 0 {
+            fmt.Println("Score:", snake.length)
+          }
           os.Exit(0)
         case tcell.KeyDown:
           snake.yspeed = 1
