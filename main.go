@@ -23,17 +23,24 @@ type Snake struct {
   tail []Pos
   history []Pos
   food Pos
+  difficulty int
 }
 
-func menu(s tcell.Screen, style tcell.Style) {
+func menu(s tcell.Screen, style tcell.Style, snake Snake) {
   x, y := s.Size()
   str1 := "UnclassedPenguin Snake"
   str2 := "Press any key to start game"
   str3 := "Esc or Ctrl-C to quit"
+  str4 := fmt.Sprintf("Difficulty: %v", snake.difficulty)
+  str5 := "Press 1, 2, or 3 to set difficulty"
+  str6 := "1 being easiest and 3 being hardest"
 
   writeToScreen(s,style,((x/2)-(len(str1)/2)),y/3,str1)
   writeToScreen(s,style,((x/2)-(len(str2)/2)),y/3+2,str2)
   writeToScreen(s,style,((x/2)-(len(str3)/2)),y/3+4,str3)
+  writeToScreen(s,style,((x/2)-(len(str4)/2)),y/3+6,str4)
+  writeToScreen(s,style,((x/2)-(len(str5)/2)),y/3+8,str5)
+  writeToScreen(s,style,((x/2)-(len(str6)/2)),y/3+10,str6)
 
   for {
     switch ev := s.PollEvent().(type) {
@@ -44,29 +51,36 @@ func menu(s tcell.Screen, style tcell.Style) {
       case tcell.KeyCtrlC, tcell.KeyEscape:
         s.Fini()
         os.Exit(0)
+      case tcell.KeyRune:
+        switch ev.Rune() {
+        case '1':
+          snake.difficulty = 1
+          str4 = fmt.Sprintf("Difficulty: %v", snake.difficulty)
+          writeToScreen(s,style,((x/2)-(len(str4)/2)),y/3+6,str4)
+          s.Sync()
+        case '2':
+          snake.difficulty = 2
+          str4 = fmt.Sprintf("Difficulty: %v", snake.difficulty)
+          writeToScreen(s,style,((x/2)-(len(str4)/2)),y/3+6,str4)
+          s.Sync()
+        case '3':
+          snake.difficulty = 3
+          str4 = fmt.Sprintf("Difficulty: %v", snake.difficulty)
+          writeToScreen(s,style,((x/2)-(len(str4)/2)),y/3+6,str4)
+          s.Sync()
+        default:
+          game(s, style, snake)
+        }
       default:
-        game(s, style)
+        game(s, style, snake)
       }
     }
   }
 
 }
 
-func game(s tcell.Screen, style tcell.Style) {
+func game(s tcell.Screen, style tcell.Style, snake Snake) {
   x, y := s.Size()
-
-  // Create initial snake
-  var snake Snake
-  snake.char = tcell.RuneBlock
-  snake.x = x/2
-  snake.y = y/2
-  snake.xspeed = 1
-  snake.yspeed = 0
-  snake.length = 1
-  snake.history = []Pos{}
-  snake.tail = []Pos{}
-  snake.food = newFood(s, style)
-
   // Handles Keyboard input
   go func() {
     for {
@@ -104,19 +118,30 @@ func game(s tcell.Screen, style tcell.Style) {
           case 'L', 'l':
             snake.xspeed = 1
             snake.yspeed = 0
+          //case ' ':
+            //snake.xspeed = 0
+            //snake.yspeed = 0
           }
-        default:
-          fmt.Println(ev.Key())
         }
       }
     }
   }()
 
+  var delay int
+  switch snake.difficulty {
+  case 1:
+    delay = 200
+  case 2:
+    delay = 100
+  case 3:
+    delay = 50
+  }
+
   // Main loop
   for {
     snake.x += snake.xspeed
     snake.y += snake.yspeed
-    if snake.x < 0 || snake.x > x || snake.y < 0 || snake.y > y {
+    if snake.x < 0 || snake.x > x || snake.y < 0 || snake.y > y-1 {
       gameOver(s, snake)
     }
     for _, v := range snake.tail {
@@ -124,14 +149,13 @@ func game(s tcell.Screen, style tcell.Style) {
         gameOver(s, snake)
       }
     }
-    update(&snake, s, style)
-    time.Sleep(time.Millisecond * 200)
-  }
 
+    update(&snake, s, style)
+    time.Sleep(time.Millisecond * time.Duration(delay))
+    }
 }
 
 func draw(snake Snake, s tcell.Screen, style tcell.Style) {
-  s.SetContent(snake.x, snake.y, snake.char, []rune{}, style)
   for i, _ := range snake.history {
     s.SetContent(snake.history[i].x, snake.history[i].y, snake.char, []rune{}, style)
   }
@@ -211,5 +235,20 @@ func main() {
 
   style := tcell.StyleDefault.Foreground(tcell.ColorWhite)
 
-  menu(s, style)
+  x, y := s.Size()
+
+  // Create initial snake
+  var snake Snake
+  snake.char = tcell.RuneBlock
+  snake.x = x/2
+  snake.y = y/2
+  snake.xspeed = 1
+  snake.yspeed = 0
+  snake.length = 1
+  snake.history = []Pos{}
+  snake.tail = []Pos{}
+  snake.food = newFood(s, style)
+  snake.difficulty = 1
+
+  menu(s, style, snake)
 }
