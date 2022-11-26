@@ -40,19 +40,18 @@ type Snake struct {
 
 func menu(s tcell.Screen, style tcell.Style, snake Snake) {
   x, y := s.Size()
-  str1 := "UnclassedPenguin Snake"
-  str2 := "Press any key to start game"
-  str3 := "Esc or Ctrl-C to quit"
-  str4 := fmt.Sprintf("Difficulty: %v", snake.difficulty)
-  str5 := "Press 1, 2, or 3 to set difficulty"
-  str6 := "1 being easiest and 3 being hardest"
+  strings := []string{
+    "UnclassedPenguin Snake",
+    "Press any key to start game",
+    "Esc or Ctrl-C to quit",
+    fmt.Sprintf("Difficulty: %v", snake.difficulty),
+    "Press 1, 2, or 3 to set difficulty",
+    "1 being easiest and 3 being hardest",
+  }
 
-  writeToScreen(s,style,((x/2)-(len(str1)/2)),y/3,str1)
-  writeToScreen(s,style,((x/2)-(len(str2)/2)),y/3+2,str2)
-  writeToScreen(s,style,((x/2)-(len(str3)/2)),y/3+4,str3)
-  writeToScreen(s,style,((x/2)-(len(str4)/2)),y/3+6,str4)
-  writeToScreen(s,style,((x/2)-(len(str5)/2)),y/3+8,str5)
-  writeToScreen(s,style,((x/2)-(len(str6)/2)),y/3+10,str6)
+  for i, str := range strings {
+    writeToScreen(s,style,((x/2)-(len(str)/2)),y/3+(i*2),str)
+  }
 
   for {
     switch ev := s.PollEvent().(type) {
@@ -67,18 +66,18 @@ func menu(s tcell.Screen, style tcell.Style, snake Snake) {
         switch ev.Rune() {
         case '1':
           snake.difficulty = 1
-          str4 = fmt.Sprintf("Difficulty: %v", snake.difficulty)
-          writeToScreen(s,style,((x/2)-(len(str4)/2)),y/3+6,str4)
+          strings[3] = fmt.Sprintf("Difficulty: %v", snake.difficulty)
+          writeToScreen(s,style,((x/2)-(len(strings[3])/2)),y/3+6,strings[3])
           s.Sync()
         case '2':
           snake.difficulty = 2
-          str4 = fmt.Sprintf("Difficulty: %v", snake.difficulty)
-          writeToScreen(s,style,((x/2)-(len(str4)/2)),y/3+6,str4)
+          strings[3] = fmt.Sprintf("Difficulty: %v", snake.difficulty)
+          writeToScreen(s,style,((x/2)-(len(strings[3])/2)),y/3+6,strings[3])
           s.Sync()
         case '3':
           snake.difficulty = 3
-          str4 = fmt.Sprintf("Difficulty: %v", snake.difficulty)
-          writeToScreen(s,style,((x/2)-(len(str4)/2)),y/3+6,str4)
+          strings[3] = fmt.Sprintf("Difficulty: %v", snake.difficulty)
+          writeToScreen(s,style,((x/2)-(len(strings[3])/2)),y/3+6,strings[3])
           s.Sync()
         default:
           game(s, style, snake)
@@ -104,7 +103,7 @@ func game(s tcell.Screen, style tcell.Style, snake Snake) {
         case tcell.KeyCtrlC, tcell.KeyEscape:
           s.Fini()
           if snake.length > 0 {
-            fmt.Println("Score:", snake.length)
+            fmt.Println("Score:", snake.length-1)
           }
           os.Exit(0)
         case tcell.KeyDown:
@@ -154,6 +153,7 @@ func game(s tcell.Screen, style tcell.Style, snake Snake) {
 
   // Main loop
   for {
+
     snake.x += snake.xspeed
     snake.y += snake.yspeed
     if snake.x < 0 || snake.x > x || snake.y < 0 || snake.y > y-1 {
@@ -171,10 +171,12 @@ func game(s tcell.Screen, style tcell.Style, snake Snake) {
 }
 
 func draw(snake Snake, s tcell.Screen, style tcell.Style) {
+  writeToScreen(s,style,1,1,fmt.Sprintf("Score: %v", snake.length-1))
   for i, _ := range snake.history {
     s.SetContent(snake.history[i].x, snake.history[i].y, snake.char, []rune{}, style)
   }
   s.SetContent(snake.food.x, snake.food.y, '@', []rune{}, style)
+
 }
 
 func newFood(s tcell.Screen, style tcell.Style) Pos {
@@ -229,7 +231,7 @@ func update(snake *Snake, s tcell.Screen, style tcell.Style){
 func gameOver(s tcell.Screen, snake Snake) {
   s.Fini()
   fmt.Println("You Lose!")
-  fmt.Printf("Score: %v\n", len(snake.tail))
+  fmt.Printf("Score: %v\n", snake.length-1)
   os.Exit(0)
 }
 
