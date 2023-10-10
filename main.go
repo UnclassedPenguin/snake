@@ -33,12 +33,12 @@ type Snake struct {
   yspeed int
   length int
   history []Pos
-  food Pos
 }
 
 type Game struct {
   difficulty int
   style tcell.Style
+  food Pos
 }
 
 // Shows the menu at the start
@@ -156,7 +156,7 @@ func gameStart(s tcell.Screen, snake Snake, game Game) {
 
     checkLose(s, snake)
 
-    update(s, &snake, game)
+    update(s, &snake, &game)
     time.Sleep(time.Millisecond * time.Duration(delay))
   }
 }
@@ -179,8 +179,8 @@ func checkLose(s tcell.Screen, snake Snake) {
 }
 
 // Updates the snake. Checks if it has eaten, if it has, grows by one. 
-func update(s tcell.Screen, snake *Snake, game Game){
-  food := checkFood(*snake)
+func update(s tcell.Screen, snake *Snake, game *Game){
+  food := checkFood(*snake, *game)
 
   newHistory := Pos{snake.x, snake.y}
   snake.history = append(snake.history, newHistory)
@@ -188,10 +188,12 @@ func update(s tcell.Screen, snake *Snake, game Game){
 
   if food {
     snake.length++
-    snake.food = newFood(s, game.style)
+    game.food = newFood(s, game.style, *snake)
+    //if game.food.x == -1 && game.food.y == -1 {
+      //game.food = newFood(s, game.style, *snake)
+    //}
   }
-
-  draw(s, *snake, game)
+  draw(s, *snake, *game)
 }
 
 func draw(s tcell.Screen, snake Snake, game Game) {
@@ -212,28 +214,45 @@ func draw(s tcell.Screen, snake Snake, game Game) {
   for i, _ := range snake.history {
     s.SetContent(snake.history[i].x, snake.history[i].y, snake.char, nil, game.style)
   }
-  s.SetContent(snake.food.x, snake.food.y, '@', nil, game.style)
+  s.SetContent(game.food.x, game.food.y, '@', nil, game.style)
   s.Sync()
 }
 
 // Picks a new random position for the food. Should
 // maybe update it so that it doesn't pick a spot that
 // the snake occupies.
-func newFood(s tcell.Screen, style tcell.Style) Pos {
+func newFood(s tcell.Screen, style tcell.Style, snake Snake) Pos {
   rand.Seed(time.Now().UnixNano())
 
   x, y := s.Size()
 
   var food Pos
-  food.x = rand.Intn(x)
-  food.y = rand.Intn(y)
+
+  var goodSpot = false 
+
+  //var positionTakenBySnake Pos
+  //positionTakenBySnake.x = -1
+  //positionTakenBySnake.y = -1
+
+  for !goodSpot {
+    food.x = rand.Intn(x)
+    food.y = rand.Intn(y)
+
+    goodSpot = true
+
+    for i, _ := range snake.history {
+      if snake.history[i].x == food.x && snake.history[i].y == food.y {
+        goodSpot = false
+      } 
+    }
+  }
 
   return food
 }
 
 // Check if the head of snake has gotten the food.
-func checkFood(snake Snake) bool {
-  return snake.x == snake.food.x && snake.y == snake.food.y
+func checkFood(snake Snake, game Game) bool {
+  return snake.x == game.food.x && snake.y == game.food.y
 }
 
 // Write a string to the screen.
@@ -285,13 +304,13 @@ func main() {
     yspeed: 0,
     length: 1,
     history: []Pos{},
-    food: newFood(s, style),
   }
 
   // Create initial game 
   game := Game{
     difficulty: 1,
     style: style,
+    food: newFood(s, style, snake),
   }
 
   menu(s, snake, game)
