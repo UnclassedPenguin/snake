@@ -218,9 +218,7 @@ func draw(s tcell.Screen, snake Snake, game Game) {
   s.Sync()
 }
 
-// Picks a new random position for the food. Should
-// maybe update it so that it doesn't pick a spot that
-// the snake occupies.
+// Picks a new random position for the food
 func newFood(s tcell.Screen, style tcell.Style, snake Snake) Pos {
   rand.Seed(time.Now().UnixNano())
 
@@ -230,10 +228,7 @@ func newFood(s tcell.Screen, style tcell.Style, snake Snake) Pos {
 
   var goodSpot = false 
 
-  //var positionTakenBySnake Pos
-  //positionTakenBySnake.x = -1
-  //positionTakenBySnake.y = -1
-
+  // Don't pick a spot that is occupied by the snake
   for !goodSpot {
     food.x = rand.Intn(x)
     food.y = rand.Intn(y)
